@@ -934,6 +934,11 @@
     display: none;
   }
 
+  .turn-pill,
+  .stage__caption {
+    transition: opacity 0.5s var(--ease);
+  }
+
   .hero--focus {
     .hero__mobile-bar {
       opacity: 0;
@@ -942,6 +947,12 @@
 
     .detail-card {
       transform: translateY(110%);
+    }
+
+    .turn-pill,
+    .stage__caption {
+      opacity: 0;
+      pointer-events: none;
     }
   }
 }
