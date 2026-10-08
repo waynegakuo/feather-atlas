@@ -1,0 +1,298 @@
+<fa-icon-sprite />
+
+<div
+  #hero
+  class="hero"
+  [class.hero--focus]="focusMode()"
+  [attr.data-light]="lightMode()"
+>
+  <canvas #canvas id="gl" class="hero__canvas" aria-hidden="true"></canvas>
+
+  <header class="hero__mobile-bar">
+    <span class="hero__mobile-brand">Feather Atlas</span>
+    <div class="hero__mobile-actions">
+      <button
+        type="button"
+        class="icon-plain"
+        aria-label="Explorer guide"
+        (click)="openMobileGuide()"
+      >
+        <fa-icon name="hand" />
+      </button>
+      <button
+        type="button"
+        class="icon-plain"
+        aria-label="Search"
+        (click)="searchOpen.set(!searchOpen())"
+      >
+        <fa-icon name="search" />
+      </button>
+    </div>
+  </header>
+
+  <aside class="sidebar">
+    <div class="sidebar__brand">Feather Atlas</div>
+    <nav aria-label="Field guide sections">
+      <ul class="sidebar__nav">
+        @for (item of navItems; track item.label) {
+          <li>
+            <button
+              type="button"
+              class="nav-item"
+              [class.nav-item--current]="activeNavId() === item.id"
+              [attr.aria-current]="activeNavId() === item.id ? 'page' : null"
+              (click)="onNavClick(item)"
+            >
+              <fa-icon [name]="item.icon" />
+              <span>
+                {{ item.label }}
+                @if (item.sub) {
+                  <small>{{ item.sub }}</small>
+                }
+              </span>
+            </button>
+          </li>
+        }
+      </ul>
+    </nav>
+
+    <div class="featured-card">
+      <fa-eyebrow>Featured Species</fa-eyebrow>
+      <img
+        class="featured-card__img"
+        [src]="activeBird().imageSrc"
+        [alt]="activeBird().name"
+        width="92"
+        height="76"
+      />
+      <h3 class="featured-card__title">{{ activeBird().featuredTitle }}</h3>
+      <p class="featured-card__text">{{ activeBird().featuredText }}</p>
+      <button type="button" class="featured-card__link" (click)="onLearnMore()">
+        Learn more
+        <fa-icon name="arrow-right" size="sm" />
+      </button>
+    </div>
+  </aside>
+
+  <section class="main">
+    <div class="main__search-mobile" [class.main__search-mobile--open]="searchOpen()">
+      <label class="search">
+        <fa-icon name="search" />
+        <input
+          type="search"
+          placeholder="Search species, habitats, or regions…"
+          [value]="searchQuery()"
+          (input)="onSearchInput($event)"
+        />
+      </label>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="Featured species">
+      @for (bird of filteredBirds(); track bird.id; let i = $index) {
+        <button
+          type="button"
+          role="tab"
+          class="tab"
+          [class.tab--selected]="bird.id === activeId()"
+          [attr.aria-selected]="bird.id === activeId()"
+          [attr.id]="'tab-' + bird.id"
+          [attr.aria-controls]="'panel-' + bird.id"
+          (click)="selectTab(i)"
+        >
+          <img [src]="bird.imageSrc" [alt]="" width="58" height="52" />
+          <span class="tab__name">{{ bird.name }}</span>
+          <span class="tab__latin">{{ bird.latinName }}</span>
+        </button>
+      }
+    </div>
+
+    <div
+      #stage
+      id="stage"
+      class="stage"
+      tabindex="0"
+      role="tabpanel"
+      [attr.id]="'panel-' + activeId()"
+      [attr.aria-labelledby]="'tab-' + activeId()"
+      aria-label="Interactive specimen viewer. Drag to turn, scroll to zoom, double-click or press 0 to reset."
+      (pointerdown)="onStagePointerDown($event)"
+      (pointermove)="onStagePointerMove($event)"
+      (pointerup)="onStagePointerUp($event)"
+      (pointercancel)="onStagePointerUp($event)"
+      (wheel)="scene.onWheel($event)"
+      (dblclick)="onStageDblClick()"
+      (keydown)="onStageKeydown($event)"
+    >
+      <div class="stage__shadow" [class.stage__shadow--hidden]="shadowHidden()"></div>
+
+      @if (scene.loading()) {
+        <div class="stage__loader" aria-live="polite">
+          <div class="stage__spinner"></div>
+          <p>Preparing the specimen…</p>
+        </div>
+      }
+
+      @if (scene.glFailed()[activeId()]) {
+        <img
+          class="stage__fallback"
+          [src]="activeBird().imageSrc"
+          [alt]="activeBird().name"
+        />
+      }
+
+      @if (scene.hintVisible()) {
+        <p class="stage__hint">
+          <fa-icon name="hand" size="sm" />
+          Drag to turn · scroll to zoom
+        </p>
+      }
+
+      <div class="rail">
+        <fa-icon-button
+          label="Zoom in"
+          icon="zoom-in"
+          [pressed]="scene.zoomInActive()"
+          (activate)="scene.zoomIn()"
+        />
+        <fa-icon-button
+          label="Zoom out"
+          icon="zoom-out"
+          [pressed]="scene.zoomOutActive()"
+          (activate)="scene.zoomOut()"
+        />
+        <fa-icon-button
+          label="Expand view"
+          icon="expand"
+          [pressed]="focusMode()"
+          (activate)="toggleFocus()"
+        />
+        <fa-icon-button
+          label="Toggle lighting"
+          icon="sun"
+          [pressed]="lightMode() === 'dusk'"
+          [toggle]="false"
+          (activate)="toggleLight()"
+        />
+      </div>
+
+      <div class="turn-pill">
+        <button type="button" aria-label="Turn counter-clockwise" (click)="turnLeft()">
+          <fa-icon name="ccw" size="sm" />
+        </button>
+        <button type="button" class="turn-pill__label" aria-label="Full rotation" (click)="turnFull()">
+          360°
+        </button>
+        <button type="button" aria-label="Turn clockwise" (click)="turnRight()">
+          <fa-icon name="cw" size="sm" />
+        </button>
+      </div>
+
+      <p class="stage__caption">{{ activeBird().caption }}</p>
+    </div>
+  </section>
+
+  <section class="info">
+    <div class="info__toolbar">
+      <label class="search search--desktop">
+        <fa-icon name="search" />
+        <input
+          type="search"
+          placeholder="Search species, habitats, or regions…"
+          [value]="searchQuery()"
+          (input)="onSearchInput($event)"
+        />
+      </label>
+    </div>
+
+    <div #detailCard class="detail-card">
+      <article aria-live="polite" class="detail-card__article">
+        <div [class]="detailChildClass(0)"><fa-eyebrow>{{ activeBird().family }}</fa-eyebrow></div>
+        <h1 [class]="detailChildClass(1)">{{ activeBird().name }}</h1>
+        <div class="detail-card__tags" [class]="detailChildClass(2)">
+          @for (tag of activeBird().tags; track tag) {
+            <fa-tag-pill [label]="tag" />
+          }
+        </div>
+        <p [class]="detailChildClass(3)">{{ activeBird().description }}</p>
+
+        <h2 [class]="detailChildClass(4)">Key Traits</h2>
+        <div class="traits">
+          @for (trait of activeBird().traits; track trait.label; let ti = $index) {
+            <div class="trait" [class]="detailChildClass(5 + ti)">
+              <fa-icon [name]="traitIcon(trait.icon)" size="sm" />
+              <span class="trait__label">{{ trait.label }}</span>
+              <span class="trait__value">{{ trait.value }}</span>
+            </div>
+          }
+        </div>
+
+        <h2 [class]="detailChildClass(9)">Habitat</h2>
+        <div class="habitat" [class]="detailChildClass(10)">
+          <fa-icon name="reed" size="sm" />
+          <span>{{ activeBird().habitat }}</span>
+        </div>
+
+        <button
+          type="button"
+          class="closeup"
+          [class.closeup--open]="closeUpOpen()"
+          [attr.aria-pressed]="closeUpOpen()"
+          (click)="toggleCloseUp()"
+        >
+          <span
+            class="closeup__lens"
+            [style.background-image]="'url(' + activeBird().imageSrc + ')'"
+            [style.background-position]="activeBird().lensPosition"
+          ></span>
+          <span class="closeup__copy">
+            <span class="closeup__title">Close-up Detail</span>
+            <span class="closeup__desc">{{ activeBird().closeUpText }}</span>
+          </span>
+          <fa-icon name="chevron-right" />
+        </button>
+      </article>
+    </div>
+  </section>
+
+  @if (guideOpen()) {
+    <button
+      type="button"
+      class="browse-backdrop"
+      aria-label="Close explorer guide"
+      (click)="closeGuide()"
+    ></button>
+    <aside
+      class="browse-sheet"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="guide-title"
+    >
+      <header class="browse-sheet__head">
+        <h2 id="guide-title" class="browse-sheet__title">Explorer guide</h2>
+        <button type="button" class="browse-sheet__close" (click)="closeGuide()">
+          Close
+        </button>
+      </header>
+
+      <p class="browse-sheet__hint">This preview includes Kingfisher and Hoopoe.</p>
+      <ul class="guide-list">
+        <li><strong>Drag</strong> on the specimen to turn it</li>
+        <li><strong>Scroll</strong> or pinch to zoom</li>
+        <li><strong>Double-click</strong> or press <kbd>0</kbd> to reset view</li>
+        <li>Arrow keys on the stage nudge rotation; <kbd>+</kbd> / <kbd>−</kbd> zoom</li>
+        <li>Use <strong>Focus view</strong> in the sidebar to hide panels</li>
+        <li><strong>Scene lighting</strong> switches day and dusk</li>
+        <li>Switch species with the tabs above the viewer or ← → keys elsewhere</li>
+      </ul>
+    </aside>
+  }
+
+  <div class="tab-arrows" aria-hidden="true">
+    <button type="button" class="tab-arrows__btn" (click)="prevTab()" aria-label="Previous species">
+      <fa-icon name="arrow-left" />
+    </button>
+    <button type="button" class="tab-arrows__btn" (click)="nextTab()" aria-label="Next species">
+      <fa-icon name="arrow-right" />
+    </button>
+  </div>
+</div>

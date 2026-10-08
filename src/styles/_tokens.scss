@@ -1,0 +1,30 @@
+:root {
+  --bg: #f6f1e7;
+  --panel: #fbf8f1;
+  --line: #e7e0d1;
+  --ink: #1b1a17;
+  --muted: #6d685d;
+  --sage: #4d5a3d;
+  --sage-ink: #ffffff;
+  --sage-tint: #e9ebdc;
+  --chip: #efeadd;
+  --shadow: 60, 48, 28;
+  --ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+  --font-display: 'Newsreader', 'Iowan Old Style', Georgia, serif;
+  --font-body: 'Nunito Sans', 'Segoe UI', system-ui, sans-serif;
+  --focus-ring: 2px solid var(--sage);
+  --focus-offset: 2px;
+}
+
+.hero[data-light='dusk'] {
+  --bg: #14170f;
+  --panel: #1b1f15;
+  --line: #2d3324;
+  --ink: #f2ecdf;
+  --muted: #a8a392;
+  --sage: #a9b98a;
+  --sage-ink: #14170f;
+  --sage-tint: #283020;
+  --chip: #262b1d;
+  --shadow: 0, 0, 0;
+}
